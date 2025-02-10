@@ -17,10 +17,67 @@ import { columnResizing, tableNodes } from "prosemirror-tables";
 import "prosemirror-tables/style/tables.css";  // Add table styles
 import "@/fonts/fonts.css";
 import AssetManager from "@/components/AssetManager";
+import { defaultSettings, updateImageNode, imagePlugin } from "prosemirror-image-plugin";
+import "prosemirror-image-plugin/dist/styles/common.css";
+import "prosemirror-image-plugin/dist/styles/withResize.css";
 //import AssetGridItem from '@/components/AssetManager/AssetGridItem'; // Ensure this path is correct
 
-// Define a custom schema that supports styles and more HTML elements
-const nodes = OrderedMap.from(basicSchema.spec.nodes);
+const imageSettings = {
+  ...defaultSettings,
+  resize: true,
+  resizeWidth: true,
+  uploadFile: async (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+  },
+  handleDrop: false,
+  handlePaste: false,
+  handleEnter: false,
+  createImageNodes: false,
+  defaultImageWidth: null,
+  keymap: {},
+  createOnEnter: false,
+  createOnPaste: false,
+  handleKeyDown: () => false,
+  createPlaceholder: () => null,
+  defaultDisplay: 'inline',
+  menuElements: []
+};
+
+// Instead of using updateImageNode, let's add the image node directly
+const nodes = OrderedMap.from(basicSchema.spec.nodes).append({
+  image: {
+    attrs: {
+      src: {},
+      alt: { default: null },
+      title: { default: null },
+      width: { default: null },
+      height: { default: null }
+    },
+    inline: true,
+    group: "inline",
+    draggable: true,
+    parseDOM: [{
+      tag: "img[src]",
+      getAttrs(dom: HTMLElement) {
+        return {
+          src: dom.getAttribute("src"),
+          title: dom.getAttribute("title"),
+          alt: dom.getAttribute("alt"),
+          width: dom.getAttribute("width"),
+          height: dom.getAttribute("height")
+        };
+      }
+    }],
+    toDOM(node) {
+      const { src, alt, title, width, height } = node.attrs;
+      return ["img", { src, alt, title, width, height }];
+    }
+  }
+});
 
 // Update the schema to include table nodes
 const tableSchema = tableNodes({
@@ -508,7 +565,8 @@ const ProseMirrorEditor: React.FC = () => {
         history(),
         keymap(baseKeymap),
         columnResizing(),
-        tableEditing()
+        tableEditing(),
+        imagePlugin(imageSettings)
       ],
     });
 
@@ -632,7 +690,7 @@ const ProseMirrorEditor: React.FC = () => {
     if (!viewRef.current) return;
 
     const imageNode = viewRef.current.state.schema.nodes.image.create({
-      src: sessionStorage.getItem(asset.url) || asset.url,
+      src: asset.url,  // Use the URL directly
       alt: asset.name,
       title: asset.name
     });
