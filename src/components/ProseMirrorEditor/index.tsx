@@ -20,6 +20,7 @@ import AssetManager from "@/components/AssetManager";
 import { defaultSettings, updateImageNode, imagePlugin } from "prosemirror-image-plugin";
 import "prosemirror-image-plugin/dist/styles/common.css";
 import "prosemirror-image-plugin/dist/styles/withResize.css";
+import "@/components/ProseMirrorEditor/styles.css";
 //import AssetGridItem from '@/components/AssetManager/AssetGridItem'; // Ensure this path is correct
 
 const imageSettings = {
@@ -701,19 +702,25 @@ const ProseMirrorEditor: React.FC = () => {
   };
 
   return (
-    <div className="border border-gray-300 p-4 w-full max-w-2xl rounded shadow-md bg-white">
+    <div className="border border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden max-w-4xl mx-auto">
       {/* Toolbar */}
-      <div className="flex space-x-2 mb-4">
+      <div className="editor-toolbar">
         {toolbarButtons.map((btn, index) => (
           <div key={index} className="relative">
             <button
               onClick={() => {
+                // Close all dropdowns first
+                setIsFormatDropdownOpen(false);
+                setIsTableDropdownOpen(false);
+                setIsFontDropdownOpen(false);
+                
+                // Then open the selected one
                 if (btn.label === "Format ▾") {
-                  setIsFormatDropdownOpen(!isFormatDropdownOpen);
+                  setIsFormatDropdownOpen(true);
                 } else if (btn.label === "Table ▾") {
-                  setIsTableDropdownOpen(!isTableDropdownOpen);
+                  setIsTableDropdownOpen(true);
                 } else if (btn.label === "Font ▾") {
-                  setIsFontDropdownOpen(!isFontDropdownOpen);
+                  setIsFontDropdownOpen(true);
                 } else {
                   handleButtonClick(btn.command, btn.label);
                 }
@@ -789,7 +796,7 @@ const ProseMirrorEditor: React.FC = () => {
 
       {/* HTML Paste Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center modal-overlay">
           <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-xl">
             <h2 className="text-xl font-bold mb-4">Paste HTML Content</h2>
             <textarea
@@ -821,7 +828,7 @@ const ProseMirrorEditor: React.FC = () => {
 
       {/* CSS Modal */}
       {isCssModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center modal-overlay">
           <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-xl">
             <h2 className="text-xl font-bold mb-4">Edit CSS Styles</h2>
             <textarea
@@ -844,12 +851,14 @@ const ProseMirrorEditor: React.FC = () => {
 
       {/* Asset Manager */}
       {isAssetManagerOpen && (
-        <AssetManager
-          isOpen={isAssetManagerOpen}
-          onClose={() => setIsAssetManagerOpen(false)}
-          onSelect={handleAssetSelect}
-          mode="image"
-        />
+        <div className="modal-overlay">
+          <AssetManager
+            isOpen={isAssetManagerOpen}
+            onClose={() => setIsAssetManagerOpen(false)}
+            onSelect={handleAssetSelect}
+            mode="image"
+          />
+        </div>
       )}
     </div>
   );

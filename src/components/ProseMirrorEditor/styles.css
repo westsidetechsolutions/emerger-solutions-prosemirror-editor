@@ -1,0 +1,199 @@
+/* Add these styles at the end of your existing CSS */
+.ProseMirror {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: 1.5rem;
+  min-height: 300px;
+  background: white;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.ProseMirror h1 {
+  font-size: 2.25em;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: #1a202c;
+  margin: 1.5em 0 0.75em;
+}
+
+.ProseMirror h2 {
+  font-size: 1.75em;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 1.25em 0 0.75em;
+}
+
+.ProseMirror p {
+  margin: 1em 0;
+  line-height: 1.8;
+  color: #4a5568;
+}
+
+.ProseMirror blockquote {
+  border-left: 4px solid #3182ce;
+  margin: 1.5em 0;
+  padding: 0.5em 0 0.5em 1.5em;
+  color: #4a5568;
+  font-style: italic;
+  background: #f7fafc;
+  border-radius: 0 8px 8px 0;
+}
+
+.ProseMirror pre {
+  background-color: #f7fafc;
+  padding: 1em;
+  border-radius: 0.375rem;
+  font-family: monospace;
+  margin: 1em 0;
+}
+
+.ProseMirror ul, .ProseMirror ol {
+  padding-left: 1.75em;
+  margin: 1em 0;
+  color: #4a5568;
+}
+
+.ProseMirror ul ul {
+  list-style-type: circle;
+}
+
+.ProseMirror ul ul ul {
+  list-style-type: square;
+}
+
+.ProseMirror ol ol {
+  list-style-type: lower-alpha;
+}
+
+.ProseMirror ol ol ol {
+  list-style-type: lower-roman;
+}
+
+.ProseMirror li {
+  margin: 0.5em 0;
+  line-height: 1.6;
+}
+
+/* Toolbar styling */
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px;
+  background: white;
+  border-bottom: 1px solid #edf2f7;
+  border-radius: 8px 8px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.editor-toolbar button {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  color: #4a5568;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.editor-toolbar button:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.editor-toolbar button.active {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #2d3748;
+}
+
+/* Dropdown styling */
+.editor-toolbar .dropdown-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  min-width: 180px;
+  z-index: 45;
+}
+
+.editor-toolbar .dropdown-content button {
+  width: 100%;
+  text-align: left;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #4a5568;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.editor-toolbar .dropdown-content button:hover {
+  background: #f7fafc;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Image styling */
+.ProseMirror img {
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.ProseMirror img:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Table styling */
+.ProseMirror table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  margin: 1em 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.ProseMirror th {
+  background: #f7fafc;
+  padding: 12px 16px;
+  border-bottom: 2px solid #e2e8f0;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.ProseMirror td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #edf2f7;
+  color: #4a5568;
+}
+
+/* Modal overlay styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+/* Ensure asset manager modal stays on top */
+.asset-manager-modal {
+  z-index: 51;
+} 
