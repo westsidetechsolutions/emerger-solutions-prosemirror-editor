@@ -6,21 +6,23 @@ import { EditorView } from "prosemirror-view";
 import { Schema, DOMParser, NodeSpec, DOMSerializer } from "prosemirror-model";
 import { history, undo, redo } from "prosemirror-history";
 import { keymap } from "prosemirror-keymap";
-import { baseKeymap, toggleMark } from "prosemirror-commands";
+import { baseKeymap, toggleMark, setBlockType, wrapIn } from "prosemirror-commands";
 import { schema as basicSchema } from "prosemirror-schema-basic";
-import { wrapIn, setBlockType } from "prosemirror-commands";
 import { addListNodes, wrapInList } from "prosemirror-schema-list";
-import "prosemirror-view/style/prosemirror.css";
-import OrderedMap from "orderedmap";
 import { addColumnAfter, addColumnBefore, deleteColumn, addRowAfter, addRowBefore, deleteRow, mergeCells, splitCell, toggleHeaderCell, tableEditing } from 'prosemirror-tables';
 import { columnResizing, tableNodes } from "prosemirror-tables";
-import "prosemirror-tables/style/tables.css";  // Add table styles
+import OrderedMap from "orderedmap";
+import "prosemirror-view/style/prosemirror.css";
+import "prosemirror-tables/style/tables.css";
 import "@/fonts/fonts.css";
-import AssetManager from "@/components/AssetManager";
+import AssetManager from "../AssetManager/AssetManager";
 import { defaultSettings, updateImageNode, imagePlugin } from "prosemirror-image-plugin";
 import "prosemirror-image-plugin/dist/styles/common.css";
 import "prosemirror-image-plugin/dist/styles/withResize.css";
 import "@/components/ProseMirrorEditor/styles.css";
+import ColorPicker from "./ColorPicker";
+
+const EDITOR_CLASS = "prosemirror-editor-container";
 
 const nodes = OrderedMap.from(basicSchema.spec.nodes);
 
@@ -240,6 +242,26 @@ const extendedSchema = new Schema({
             style: `font-family: ${node.attrs.fontFamily}`
           }, 0]
         }
+      },
+      textColor: {
+        attrs: { color: { default: '' } },
+        parseDOM: [{
+          style: 'color',
+          getAttrs: (value) => ({ color: value })
+        }],
+        toDOM(mark) {
+          return ['span', { style: `color: ${mark.attrs.color}` }, 0];
+        }
+      },
+      backgroundColor: {
+        attrs: { color: { default: '' } },
+        parseDOM: [{
+          style: 'background-color',
+          getAttrs: (value) => ({ color: value })
+        }],
+        toDOM(mark) {
+          return ['span', { style: `background-color: ${mark.attrs.color}` }, 0];
+        }
       }
     }
   });
@@ -255,247 +277,6 @@ type ToolbarButton = {
   title: string;
 };
 
-// Separate table buttons into their own array
-const tableButtons: ToolbarButton[] = [
-  {
-    label: "Insert",
-    command: (state: EditorState, dispatch: Dispatch) => {
-      if (dispatch) {
-        const tr = state.tr.replaceSelectionWith(
-          state.schema.nodes.table.create({}, [
-            state.schema.nodes.table_row.create({}, [
-              state.schema.nodes.table_cell.create({}, [
-                state.schema.nodes.paragraph.create()
-              ])
-            ])
-          ])
-        );
-        dispatch(tr);
-      }
-      return true;
-    },
-    title: "Insert Table"
-  },
-  {
-    label: "Add Column",
-    command: addColumnAfter,
-    title: "Add Column"
-  },
-  {
-    label: "Add Row",
-    command: addRowAfter,
-    title: "Add Row"
-  },
-  {
-    label: "Delete Column",
-    command: deleteColumn,
-    title: "Delete Column"
-  },
-  {
-    label: "Delete Row",
-    command: deleteRow,
-    title: "Delete Row"
-  },
-  {
-    label: "Merge Cells",
-    command: mergeCells,
-    title: "Merge Cells"
-  },
-  {
-    label: "Split Cell",
-    command: splitCell,
-    title: "Split Cell"
-  },
-  {
-    label: "Toggle Header",
-    command: toggleHeaderCell,
-    title: "Toggle Header"
-  }
-];
-
-// Add new format buttons array
-const formatButtons: ToolbarButton[] = [
-  {
-    label: "Paragraph",
-    command: (state: EditorState, dispatch: Dispatch) => 
-      setBlockType(extendedSchema.nodes.paragraph)(state, dispatch),
-    title: "Change to paragraph"
-  },
-  {
-    label: "Heading 1",
-    command: (state: EditorState, dispatch: Dispatch) => 
-      setBlockType(extendedSchema.nodes.heading, { level: 1 })(state, dispatch),
-    title: "Change to H1"
-  },
-  {
-    label: "Heading 2",
-    command: (state: EditorState, dispatch: Dispatch) => 
-      setBlockType(extendedSchema.nodes.heading, { level: 2 })(state, dispatch),
-    title: "Change to H2"
-  },
-  {
-    label: "Heading 3",
-    command: (state: EditorState, dispatch: Dispatch) => 
-      setBlockType(extendedSchema.nodes.heading, { level: 3 })(state, dispatch),
-    title: "Change to H3"
-  },
-  {
-    label: "Heading 4",
-    command: (state: EditorState, dispatch: Dispatch) => 
-      setBlockType(extendedSchema.nodes.heading, { level: 4 })(state, dispatch),
-    title: "Change to H4"
-  },
-  {
-    label: "Heading 5",
-    command: (state: EditorState, dispatch: Dispatch) => 
-      setBlockType(extendedSchema.nodes.heading, { level: 5 })(state, dispatch),
-    title: "Change to H5"
-  },
-  {
-    label: "Heading 6",
-    command: (state: EditorState, dispatch: Dispatch) => 
-      setBlockType(extendedSchema.nodes.heading, { level: 6 })(state, dispatch),
-    title: "Change to H6"
-  },
-  {
-    label: "Code Block",
-    command: (state: EditorState, dispatch: Dispatch) => 
-      setBlockType(extendedSchema.nodes.code_block)(state, dispatch),
-    title: "Change to code block"
-  },
-  {
-    label: "Bullet List",
-    command: (state: EditorState, dispatch: Dispatch) => 
-      wrapInList(extendedSchema.nodes.bullet_list)(state, dispatch),
-    title: "Change to bullet list"
-  },
-  {
-    label: "Check List",
-    command: (state: EditorState, dispatch: Dispatch) => 
-      wrapInList(extendedSchema.nodes.check_list)(state, dispatch),
-    title: "Change to check list"
-  },
-  {
-    label: "Block Quote",
-    command: (state: EditorState, dispatch: Dispatch) => 
-      wrapIn(extendedSchema.nodes.blockquote)(state, dispatch),
-    title: "Change to block quote"
-  },
-  {
-    label: "Button",
-    command: (state: EditorState, dispatch: Dispatch) => {
-      const button = state.schema.nodes.button.create(
-        { class: "px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" },
-        state.schema.text("Click me")
-      );
-      if (dispatch) {
-        const tr = state.tr.replaceSelectionWith(button);
-        dispatch(tr);
-      }
-      return true;
-    },
-    title: "Insert Button"
-  }
-];
-
-// Add font buttons array with your specific fonts
-const fontButtons: ToolbarButton[] = [
-  {
-    label: "Default",
-    command: (state: EditorState, dispatch: Dispatch) => {
-      const markType = state.schema.marks.font;
-      return toggleMark(markType, { fontFamily: '' })(state, dispatch);
-    },
-    title: "Default Font"
-  },
-  {
-    label: "Liberation Sans",
-    command: (state: EditorState, dispatch: Dispatch) => {
-      const markType = state.schema.marks.font;
-      return toggleMark(markType, { fontFamily: "'Liberation Sans'" })(state, dispatch);
-    },
-    title: "Liberation Sans"
-  },
-  {
-    label: "Proximanova Regular",
-    command: (state: EditorState, dispatch: Dispatch) => {
-      const markType = state.schema.marks.font;
-      return toggleMark(markType, { fontFamily: "'Proximanova Regular'" })(state, dispatch);
-    },
-    title: "Proximanova Regular"
-  }
-];
-
-// Remove table buttons from main toolbar and add dropdown button
-const toolbarButtons: ToolbarButton[] = [
-    {
-      label: "B",
-      command: (state: EditorState, dispatch: Dispatch) =>
-        toggleMark(extendedSchema.marks.strong)(state, dispatch),
-      title: "Bold",
-    },
-    {
-      label: "I",
-      command: (state: EditorState, dispatch: Dispatch) =>
-        toggleMark(extendedSchema.marks.em)(state, dispatch),
-      title: "Italic",
-    },
-    {
-      label: "Format ▾",
-      command: null,
-      title: "Text Format"
-    },
-    {
-      label: "Font ▾",
-      command: null,
-      title: "Font Family"
-    },
-    {
-      label: "U",
-      command: (state: EditorState, dispatch: Dispatch) =>
-        toggleMark(extendedSchema.marks.underline)(state, dispatch),
-      title: "Underline",
-    },
-    { label: "⮌", command: undo, title: "Undo" },
-    { label: "⮎", command: redo, title: "Redo" },
-    {
-      label: "📷",  // Image icon
-      command: null,
-      title: "Insert Image"
-    },
-    {
-      label: "Paste HTML",
-      command: null,
-      title: "Paste HTML Content"
-    },
-    {
-      label: "CSS",
-      command: null,
-      title: "Edit CSS Styles"
-    },
-    {
-      label: "•",
-      command: (state: EditorState, dispatch: Dispatch) =>
-        wrapInList(extendedSchema.nodes.bullet_list)(state, dispatch),
-      title: "Bullet List"
-    },
-    {
-      label: "1.",
-      command: (state: EditorState, dispatch: Dispatch) =>
-        wrapInList(extendedSchema.nodes.ordered_list)(state, dispatch),
-      title: "Numbered List"
-    },
-    {
-      label: "Table ▾",
-      command: null,
-      title: "Table Operations"
-    }
-  ];
-  
-
-// Add a unique class to the editor container
-const EDITOR_CLASS = "prosemirror-editor-content";
-
 const ProseMirrorEditor: React.FC = () => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -509,6 +290,243 @@ const ProseMirrorEditor: React.FC = () => {
   const [isFormatDropdownOpen, setIsFormatDropdownOpen] = useState(false);
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
   const [isAssetManagerOpen, setIsAssetManagerOpen] = useState(false);
+
+  // Add new state variables for color picker
+  const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const [colorPickerPosition, setColorPickerPosition] = useState({ top: 0, left: 0 });
+
+  // Define table commands first
+  const insertTable = (state: EditorState, dispatch: Dispatch) => {
+    const tr = state.tr.replaceSelectionWith(
+      state.schema.nodes.table.create({}, [
+        state.schema.nodes.table_row.create({}, [
+          state.schema.nodes.table_cell.create(),
+          state.schema.nodes.table_cell.create(),
+          state.schema.nodes.table_cell.create()
+        ]),
+        state.schema.nodes.table_row.create({}, [
+          state.schema.nodes.table_cell.create(),
+          state.schema.nodes.table_cell.create(),
+          state.schema.nodes.table_cell.create()
+        ]),
+        state.schema.nodes.table_row.create({}, [
+          state.schema.nodes.table_cell.create(),
+          state.schema.nodes.table_cell.create(),
+          state.schema.nodes.table_cell.create()
+        ])
+      ])
+    );
+    if (dispatch) dispatch(tr);
+    return true;
+  };
+
+  // Then define toolbar buttons
+  const toolbarButtons = [
+    {
+      label: "B",
+      command: toggleMark(extendedSchema.marks.strong),
+      title: "Bold"
+    },
+    {
+      label: "I",
+      command: toggleMark(extendedSchema.marks.em),
+      title: "Italic"
+    },
+    {
+      label: "U",
+      command: toggleMark(extendedSchema.marks.underline),
+      title: "Underline"
+    },
+    {
+      label: "Format ▾",
+      command: null,
+      title: "Text formatting options"
+    },
+    {
+      label: "Table ▾",
+      command: null,
+      title: "Table options"
+    },
+    {
+      label: "Font ▾",
+      command: null,
+      title: "Font options"
+    },
+    {
+      label: "📷",
+      command: null,
+      title: "Insert image"
+    },
+    {
+      label: "Paste HTML",
+      command: null,
+      title: "Paste HTML content"
+    },
+    {
+      label: "CSS",
+      command: null,
+      title: "Edit CSS"
+    }
+  ];
+
+  // Then format buttons
+  const formatButtons = [
+    {
+      label: "Paragraph",
+      command: setBlockType(extendedSchema.nodes.paragraph),
+      title: "Change to paragraph"
+    },
+    {
+      label: "Heading 1",
+      command: setBlockType(extendedSchema.nodes.heading, { level: 1 }),
+      title: "Change to heading 1"
+    },
+    {
+      label: "Heading 2",
+      command: setBlockType(extendedSchema.nodes.heading, { level: 2 }),
+      title: "Change to heading 2"
+    },
+    {
+      label: "Bullet List",
+      command: wrapInList(extendedSchema.nodes.bullet_list),
+      title: "Wrap in bullet list"
+    },
+    {
+      label: "Numbered List",
+      command: wrapInList(extendedSchema.nodes.ordered_list),
+      title: "Wrap in numbered list"
+    },
+    {
+      label: "Blockquote",
+      command: wrapIn(extendedSchema.nodes.blockquote),
+      title: "Wrap in block quote"
+    }
+  ];
+
+  // Then table buttons
+  const tableButtons = [
+    {
+      label: "Insert Table",
+      command: insertTable,
+      title: "Insert table"
+    },
+    {
+      label: "Add Column Before",
+      command: addColumnBefore,
+      title: "Add column before"
+    },
+    {
+      label: "Add Column After",
+      command: addColumnAfter,
+      title: "Add column after"
+    },
+    {
+      label: "Delete Column",
+      command: deleteColumn,
+      title: "Delete column"
+    },
+    {
+      label: "Add Row Before",
+      command: addRowBefore,
+      title: "Add row before"
+    },
+    {
+      label: "Add Row After",
+      command: addRowAfter,
+      title: "Add row after"
+    },
+    {
+      label: "Delete Row",
+      command: deleteRow,
+      title: "Delete row"
+    },
+    {
+      label: "Merge Cells",
+      command: mergeCells,
+      title: "Merge cells"
+    },
+    {
+      label: "Split Cell",
+      command: splitCell,
+      title: "Split cell"
+    },
+    {
+      label: "Toggle Header",
+      command: toggleHeaderCell,
+      title: "Toggle header"
+    }
+  ];
+
+  // Then font buttons
+  const fontButtons = [
+    {
+      label: "Default",
+      command: toggleMark(extendedSchema.marks.fontFamily, { fontFamily: '' }),
+      title: "Default font"
+    },
+    {
+      label: "Arial",
+      command: toggleMark(extendedSchema.marks.fontFamily, { fontFamily: 'Arial' }),
+      title: "Arial font"
+    },
+    {
+      label: "Times New Roman",
+      command: toggleMark(extendedSchema.marks.fontFamily, { fontFamily: 'Times New Roman' }),
+      title: "Times New Roman font"
+    },
+    {
+      label: "Courier New",
+      command: toggleMark(extendedSchema.marks.fontFamily, { fontFamily: 'Courier New' }),
+      title: "Courier New font"
+    }
+  ];
+
+  // Then color buttons
+  const colorButtons = [
+    {
+      label: "Text Color",
+      command: (color: string) => (state: EditorState, dispatch: Dispatch) => {
+        const { from, to } = state.selection;
+        if (dispatch) {
+          dispatch(state.tr.addMark(
+            from,
+            to,
+            state.schema.marks.textColor.create({ color })
+          ));
+        }
+        return true;
+      },
+      title: "Change text color",
+      onClick: (e: React.MouseEvent) => {
+        const rect = (e.target as HTMLElement).getBoundingClientRect();
+        setColorPickerPosition({ top: rect.bottom + window.scrollY, left: rect.left });
+        setShowTextColorPicker(true);
+        setShowBgColorPicker(false);
+      }
+    },
+    {
+      label: "Highlight Color",
+      command: (color: string) => (state: EditorState, dispatch: Dispatch) => {
+        const { from, to } = state.selection;
+        if (dispatch) {
+          dispatch(state.tr.addMark(
+            from,
+            to,
+            state.schema.marks.backgroundColor.create({ color })
+          ));
+        }
+        return true;
+      },
+      title: "Change highlight color",
+      onClick: (e: React.MouseEvent) => {
+        const rect = (e.target as HTMLElement).getBoundingClientRect();
+        setColorPickerPosition({ top: rect.bottom + window.scrollY, left: rect.left });
+        setShowBgColorPicker(true);
+        setShowTextColorPicker(false);
+      }
+    }
+  ];
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -744,6 +762,16 @@ const ProseMirrorEditor: React.FC = () => {
             )}
           </div>
         ))}
+        {colorButtons.map((btn, index) => (
+          <button
+            key={index}
+            onClick={(e) => btn.onClick(e)}
+            className="px-3 py-2 border rounded hover:bg-gray-100"
+            title={btn.title}
+          >
+            {btn.label}
+          </button>
+        ))}
       </div>
 
       {/* Add the unique class to the editor container */}
@@ -814,6 +842,35 @@ const ProseMirrorEditor: React.FC = () => {
             onClose={() => setIsAssetManagerOpen(false)}
             onSelect={handleAssetSelect}
             mode="image"
+          />
+        </div>
+      )}
+
+      {/* Add color pickers */}
+      {showTextColorPicker && (
+        <div style={{ position: 'absolute', ...colorPickerPosition }}>
+          <ColorPicker
+            title="Select Text Color"
+            onColorSelect={(color) => {
+              handleButtonClick(colorButtons[0].command(color));
+              setShowTextColorPicker(false);
+            }}
+            onClose={() => setShowTextColorPicker(false)}
+            initialColor="#000000"
+          />
+        </div>
+      )}
+
+      {showBgColorPicker && (
+        <div style={{ position: 'absolute', ...colorPickerPosition }}>
+          <ColorPicker
+            title="Select Highlight Color"
+            onColorSelect={(color) => {
+              handleButtonClick(colorButtons[1].command(color));
+              setShowBgColorPicker(false);
+            }}
+            onClose={() => setShowBgColorPicker(false)}
+            initialColor="#ffeb3b"
           />
         </div>
       )}
