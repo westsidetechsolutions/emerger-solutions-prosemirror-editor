@@ -145,18 +145,6 @@
   box-shadow: none;
 }
 
-/* Image styling */
-.ProseMirror img {
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
-.ProseMirror img:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
 /* Table styling */
 .ProseMirror table {
   border-collapse: separate;
@@ -196,4 +184,66 @@
 /* Ensure asset manager modal stays on top */
 .asset-manager-modal {
   z-index: 51;
+}
+
+.image-alignment-controls {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  margin-top: 8px;
+  z-index: 45;
+}
+
+.alignment-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: white;
+  color: #4a5568;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 80px;
+}
+
+.alignment-button:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.alignment-button.active {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.ProseMirror img.image-left {
+  float: left;
+  margin: 0.5em 1em 0.5em 0;
+  clear: left;
+}
+
+.ProseMirror img.image-center {
+  display: block;
+  margin: 0.5em auto;
+  clear: both;
+}
+
+.ProseMirror img.image-right {
+  float: right;
+  margin: 0.5em 0 0.5em 1em;
+  clear: right;
 } 

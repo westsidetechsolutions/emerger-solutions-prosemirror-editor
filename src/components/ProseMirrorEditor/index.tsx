@@ -21,7 +21,8 @@ import { defaultSettings, updateImageNode, imagePlugin } from "prosemirror-image
 import "prosemirror-image-plugin/dist/styles/common.css";
 import "prosemirror-image-plugin/dist/styles/withResize.css";
 import "@/components/ProseMirrorEditor/styles.css";
-//import AssetGridItem from '@/components/AssetManager/AssetGridItem'; // Ensure this path is correct
+
+const nodes = OrderedMap.from(basicSchema.spec.nodes);
 
 const imageSettings = {
   ...defaultSettings,
@@ -33,52 +34,8 @@ const imageSettings = {
       reader.onloadend = () => resolve(reader.result as string);
       reader.readAsDataURL(file);
     });
-  },
-  handleDrop: false,
-  handlePaste: false,
-  handleEnter: false,
-  createImageNodes: false,
-  defaultImageWidth: null,
-  keymap: {},
-  createOnEnter: false,
-  createOnPaste: false,
-  handleKeyDown: () => false,
-  createPlaceholder: () => null,
-  defaultDisplay: 'inline',
-  menuElements: []
-};
-
-// Instead of using updateImageNode, let's add the image node directly
-const nodes = OrderedMap.from(basicSchema.spec.nodes).append({
-  image: {
-    attrs: {
-      src: {},
-      alt: { default: null },
-      title: { default: null },
-      width: { default: null },
-      height: { default: null }
-    },
-    inline: true,
-    group: "inline",
-    draggable: true,
-    parseDOM: [{
-      tag: "img[src]",
-      getAttrs(dom: HTMLElement) {
-        return {
-          src: dom.getAttribute("src"),
-          title: dom.getAttribute("title"),
-          alt: dom.getAttribute("alt"),
-          width: dom.getAttribute("width"),
-          height: dom.getAttribute("height")
-        };
-      }
-    }],
-    toDOM(node) {
-      const { src, alt, title, width, height } = node.attrs;
-      return ["img", { src, alt, title, width, height }];
-    }
   }
-});
+};
 
 // Update the schema to include table nodes
 const tableSchema = tableNodes({
@@ -691,7 +648,7 @@ const ProseMirrorEditor: React.FC = () => {
     if (!viewRef.current) return;
 
     const imageNode = viewRef.current.state.schema.nodes.image.create({
-      src: asset.url,  // Use the URL directly
+      src: asset.url,
       alt: asset.name,
       title: asset.name
     });
