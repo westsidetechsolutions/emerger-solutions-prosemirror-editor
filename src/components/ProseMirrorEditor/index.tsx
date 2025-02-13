@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { EditorState, Transaction } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
+import { EditorState, Transaction, Plugin } from "prosemirror-state";
+import { EditorView, Decoration, DecorationSet } from "prosemirror-view";
 import { Schema, DOMParser, NodeSpec, DOMSerializer } from "prosemirror-model";
 import { history, undo, redo } from "prosemirror-history";
 import { keymap } from "prosemirror-keymap";
@@ -16,28 +16,15 @@ import "prosemirror-view/style/prosemirror.css";
 import "prosemirror-tables/style/tables.css";
 import "@/fonts/fonts.css";
 import AssetManager from "../AssetManager/AssetManager";
-import { defaultSettings, updateImageNode, imagePlugin } from "prosemirror-image-plugin";
 import "prosemirror-image-plugin/dist/styles/common.css";
 import "prosemirror-image-plugin/dist/styles/withResize.css";
 import "@/components/ProseMirrorEditor/styles.css";
 import ColorPicker from "./ColorPicker";
+import { imagePlugin } from 'prosemirror-image-plugin';
 
 const EDITOR_CLASS = "prosemirror-editor-container";
 
 const nodes = OrderedMap.from(basicSchema.spec.nodes);
-
-const imageSettings = {
-  ...defaultSettings,
-  resize: true,
-  resizeWidth: true,
-  uploadFile: async (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.readAsDataURL(file);
-    });
-  }
-};
 
 // Update the schema to include table nodes
 const tableSchema = tableNodes({
@@ -304,6 +291,37 @@ const extendedSchema = new Schema({
               "data-inherit-color": "true"
             }, 0];
           }
+        },
+        image: {
+          inline: true,
+          attrs: {
+            src: { default: '' },
+            alt: { default: '' },
+            title: { default: '' },
+            width: { default: null },
+            style: { default: '' }
+          },
+          group: "inline",
+          draggable: true,
+          parseDOM: [{
+            tag: "img",
+            getAttrs(dom: HTMLElement) {
+              return {
+                src: dom.getAttribute("src") || "",
+                alt: dom.getAttribute("alt") || "",
+                title: dom.getAttribute("title") || "",
+                width: dom.getAttribute("width") || null,
+                style: dom.getAttribute("style") || ""
+              };
+            }
+          }],
+          toDOM(node) {
+            const attrs = {...node.attrs};
+            if (!attrs.style && attrs.width) {
+              attrs.style = `width: ${attrs.width}px`;
+            }
+            return ["img", attrs];
+          }
         }
       } as { [key: string]: NodeSpec }),
       "paragraph block*",
@@ -408,6 +426,64 @@ type ToolbarButton = {
   label: string;
   command: ((state: EditorState, dispatch: Dispatch) => boolean) | null;
   title: string;
+};
+
+// Add this function before your ProseMirrorEditor component
+const createImageResizePlugin = () => {
+  return new Plugin({
+    props: {
+      handleDOMEvents: {
+        mousedown: (view, event) => {
+          const target = event.target as HTMLElement;
+          if (target.nodeName === 'IMG') {
+            const img = target as HTMLImageElement;
+            let startX = event.pageX;
+            let startWidth = img.width;
+            
+            // Find the image node position
+            const pos = view.posAtDOM(img, 0);
+            if (pos === null) return false;
+            
+            const node = view.state.doc.nodeAt(pos);
+            if (!node) return false;
+
+            img.classList.add('ProseMirror-selectednode');
+            img.classList.add('resize-cursor');
+
+            const onMouseMove = (e: MouseEvent) => {
+              const currentX = e.pageX;
+              const diffX = currentX - startX;
+              const newWidth = Math.max(60, startWidth + diffX);
+              
+              try {
+                const tr = view.state.tr.setNodeMarkup(pos, null, {
+                  ...node.attrs,
+                  width: newWidth,
+                  style: `width: ${newWidth}px`
+                });
+                view.dispatch(tr);
+              } catch (error) {
+                console.error('Error updating image size:', error);
+              }
+            };
+
+            const onMouseUp = () => {
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+              img.classList.remove('resize-cursor');
+              img.classList.remove('ProseMirror-selectednode');
+            };
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+            event.preventDefault();
+            return true;
+          }
+          return false;
+        }
+      }
+    }
+  });
 };
 
 const ProseMirrorEditor: React.FC = () => {
@@ -663,7 +739,7 @@ const ProseMirrorEditor: React.FC = () => {
           }),
           tableEditing(),
           columnResizing({}),
-          imagePlugin(imageSettings)
+          createImageResizePlugin()
         ]
       }),
       dispatchTransaction(transaction) {

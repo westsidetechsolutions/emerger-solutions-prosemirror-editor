@@ -334,4 +334,42 @@
   background-color: #969696;
 }
 
-/* Add the rest of your CSS styles with .prosemirror-editor-container prefix */ 
+/* Add the rest of your CSS styles with .prosemirror-editor-container prefix */
+
+.ProseMirror img {
+  position: relative;
+  max-width: 100%;
+  height: auto;
+  border: 2px solid transparent;
+}
+
+.ProseMirror img:hover {
+  border: 2px solid #4dabf7;
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  border: 2px solid #4dabf7;
+  cursor: nw-resize;
+}
+
+.ProseMirror img::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: white;
+  border: 2px solid #4dabf7;
+  border-radius: 50%;
+  cursor: se-resize;
+  display: none;
+}
+
+.ProseMirror img.ProseMirror-selectednode::after {
+  display: block;
+}
+
+.ProseMirror .resize-cursor {
+  cursor: se-resize;
+} 
