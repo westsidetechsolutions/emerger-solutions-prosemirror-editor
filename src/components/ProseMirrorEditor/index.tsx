@@ -299,12 +299,11 @@ const extendedSchema = new Schema({
             src: { default: '' },
             alt: { default: '' },
             title: { default: '' },
-            width: { default: 'auto' },
-            class: { default: '' }
+            width: { default: null },
+            style: { default: '' }
           },
           group: "inline",
           draggable: true,
-          selectable: true,
           parseDOM: [{
             tag: "img",
             getAttrs(dom: HTMLElement) {
@@ -312,17 +311,20 @@ const extendedSchema = new Schema({
                 src: dom.getAttribute("src") || "",
                 alt: dom.getAttribute("alt") || "",
                 title: dom.getAttribute("title") || "",
-                width: dom.getAttribute("width") || "auto",
-                class: dom.getAttribute("class") || ""
+                width: dom.getAttribute("width") || null,
+                style: dom.getAttribute("style") || ""
               };
             }
           }],
           toDOM(node) {
             const attrs = {...node.attrs};
-            if (attrs.width === 'auto') {
-              delete attrs.width;
+            if (!attrs.style && attrs.width) {
+              attrs.style = `width: ${attrs.width}px`;
             }
-            return ["img", attrs];
+            return ["div", { class: "image-wrapper" }, 
+              ["img", attrs],
+              ["div", { class: "resize-handle" }]
+            ];
           }
         }
       } as { [key: string]: NodeSpec }),
@@ -437,55 +439,50 @@ const createImageResizePlugin = () => {
       handleDOMEvents: {
         mousedown: (view, event) => {
           const target = event.target as HTMLElement;
-          if (target.nodeName === 'IMG') {
-            const img = target as HTMLImageElement;
-            const rect = img.getBoundingClientRect();
-            const isResizeHandle = 
-              event.clientX > rect.right - 20 && 
-              event.clientY > rect.bottom - 20;
+          if (target.classList.contains('resize-handle')) {
+            const wrapper = target.parentElement;
+            const img = wrapper?.querySelector('img') as HTMLImageElement;
+            if (!img) return false;
 
-            if (isResizeHandle) {
-              let startX = event.pageX;
-              let startWidth = img.width;
+            let startX = event.pageX;
+            let startWidth = img.width;
+            
+            // Find the image node position
+            const pos = view.posAtDOM(wrapper!, 0);
+            if (pos === null) return false;
+            
+            const node = view.state.doc.nodeAt(pos);
+            if (!node) return false;
+
+            img.classList.add('resize-cursor');
+
+            const onMouseMove = (e: MouseEvent) => {
+              const currentX = e.pageX;
+              const diffX = currentX - startX;
+              const newWidth = Math.max(60, startWidth + diffX);
               
-              // Find the image node position
-              const pos = view.posAtDOM(img, 0);
-              if (pos === null) return false;
-              
-              const node = view.state.doc.nodeAt(pos);
-              if (!node) return false;
+              try {
+                const tr = view.state.tr.setNodeMarkup(pos, null, {
+                  ...node.attrs,
+                  width: newWidth,
+                  style: `width: ${newWidth}px`
+                });
+                view.dispatch(tr);
+              } catch (error) {
+                console.error('Error updating image size:', error);
+              }
+            };
 
-              img.classList.add('resize-cursor');
+            const onMouseUp = () => {
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+              img.classList.remove('resize-cursor');
+            };
 
-              const onMouseMove = (e: MouseEvent) => {
-                const currentX = e.pageX;
-                const diffX = currentX - startX;
-                const newWidth = Math.max(60, startWidth + diffX);
-                
-                try {
-                  const tr = view.state.tr.setNodeMarkup(pos, null, {
-                    ...node.attrs,
-                    width: newWidth,
-                    style: `width: ${newWidth}px`
-                  });
-                  view.dispatch(tr);
-                } catch (error) {
-                  console.error('Error updating image size:', error);
-                }
-              };
-
-              const onMouseUp = () => {
-                window.removeEventListener('mousemove', onMouseMove);
-                window.removeEventListener('mouseup', onMouseUp);
-                img.classList.remove('resize-cursor');
-              };
-
-              window.addEventListener('mousemove', onMouseMove);
-              window.addEventListener('mouseup', onMouseUp);
-              event.preventDefault();
-              return true;
-            }
-            return false;
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+            event.preventDefault();
+            return true;
           }
           return false;
         }
