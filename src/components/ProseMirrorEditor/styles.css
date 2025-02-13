@@ -308,4 +308,30 @@
 
 .cancel-button:hover {
   background: #f7fafc;
-} 
+}
+
+/* Add these styles */
+.prosemirror-editor-container .wrapper {
+  width: 97%;
+  max-width: 1400px;
+  background-color: #fff;
+  margin: 2%;
+  display: grid;
+  grid-gap: 10px;
+}
+
+.prosemirror-editor-container article {
+  background-color: #ffc;
+  padding: 4%;
+  border: 1px solid #969696;
+  box-shadow: 2px 2px 3px gray;
+}
+
+.prosemirror-editor-container header {
+  display: flex;
+  flex-direction: row;
+  justify-items: stretch;
+  background-color: #969696;
+}
+
+/* Add the rest of your CSS styles with .prosemirror-editor-container prefix */ 

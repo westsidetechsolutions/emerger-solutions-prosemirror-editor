@@ -92,7 +92,8 @@ const extendedSchema = new Schema({
           }],
           toDOM: node => ["p", { 
             style: node.attrs.style,
-            class: node.attrs.class 
+            class: node.attrs.class,
+            "data-inherit-color": "true"
           }, 0],
         },
         heading: {
@@ -171,6 +172,138 @@ const extendedSchema = new Schema({
             class: node.attrs.class,
             onclick: node.attrs.onclick
           }, 0],
+        },
+        header: {
+          content: "block+",
+          group: "block",
+          attrs: { 
+            style: { default: "" },
+            class: { default: "" }
+          },
+          parseDOM: [{
+            tag: "header",
+            getAttrs: (dom: HTMLElement) => ({
+              style: dom.getAttribute("style") || "",
+              class: dom.getAttribute("class") || ""
+            }),
+          }],
+          toDOM(node) { 
+            return ["header", { 
+              style: node.attrs.style,
+              class: node.attrs.class,
+              "data-inherit-color": "true"
+            }, 0];
+          }
+        },
+        nav: {
+          content: "block+",
+          group: "block",
+          attrs: { 
+            style: { default: "" },
+            class: { default: "" }
+          },
+          parseDOM: [{
+            tag: "nav",
+            getAttrs: (dom: HTMLElement) => ({
+              style: dom.getAttribute("style") || "",
+              class: dom.getAttribute("class") || ""
+            })
+          }],
+          toDOM(node) { 
+            return ["nav", { 
+              style: node.attrs.style,
+              class: node.attrs.class 
+            }, 0];
+          }
+        },
+        footer: {
+          content: "block+",
+          group: "block",
+          parseDOM: [{ tag: "footer" }],
+          toDOM() { return ["footer", 0] }
+        },
+        article: {
+          content: "block+",
+          group: "block",
+          attrs: {
+            class: { default: "" }
+          },
+          parseDOM: [{
+            tag: "article",
+            getAttrs: (dom: HTMLElement) => ({
+              class: dom.getAttribute("class") || ""
+            })
+          }],
+          toDOM(node) { return ["article", { class: node.attrs.class }, 0] }
+        },
+        ul: {
+          content: "li+",
+          group: "block",
+          attrs: { class: { default: "" } },
+          parseDOM: [{
+            tag: "ul",
+            getAttrs: (dom: HTMLElement) => ({
+              class: dom.getAttribute("class") || ""
+            })
+          }],
+          toDOM(node) { return ["ul", { class: node.attrs.class }, 0] }
+        },
+        li: {
+          content: "inline*",
+          inline: true,
+          group: "inline",
+          attrs: { class: { default: "" } },
+          parseDOM: [{
+            tag: "li",
+            getAttrs: (dom: HTMLElement) => ({
+              class: dom.getAttribute("class") || ""
+            })
+          }],
+          toDOM(node) { return ["li", { class: node.attrs.class }, 0] }
+        },
+        h1: {
+          content: "inline*",
+          group: "block",
+          attrs: { 
+            style: { default: "" },
+            class: { default: "" }
+          },
+          parseDOM: [{
+            tag: "h1",
+            getAttrs: (dom: HTMLElement) => ({
+              style: dom.getAttribute("style") || "",
+              class: dom.getAttribute("class") || ""
+            })
+          }],
+          toDOM(node) { 
+            return ["h1", { 
+              style: node.attrs.style,
+              class: node.attrs.class,
+              "data-inherit-color": "true"
+            }, 0];
+          }
+        },
+        p: {
+          content: "inline*",
+          group: "block",
+          attrs: { 
+            style: { default: "" },
+            class: { default: "" }
+          },
+          parseDOM: [{
+            tag: "p",
+            getAttrs: (dom: HTMLElement) => ({
+              style: dom.getAttribute("style") || "",
+              class: dom.getAttribute("class") || ""
+            })
+          }],
+          toDOM(node) { 
+            return ["p", { 
+              style: node.attrs.style,
+              class: node.attrs.class,
+              "data-inherit-color": "true"
+            }, 0];
+          }
         }
       } as { [key: string]: NodeSpec }),
       "paragraph block*",
@@ -250,7 +383,7 @@ const extendedSchema = new Schema({
           getAttrs: (value) => ({ color: value })
         }],
         toDOM(mark) {
-          return ['span', { style: `color: ${mark.attrs.color}` }, 0];
+          return ['span', { style: `color: ${mark.attrs.color} !important` }, 0];
         }
       },
       backgroundColor: {
@@ -260,7 +393,7 @@ const extendedSchema = new Schema({
           getAttrs: (value) => ({ color: value })
         }],
         toDOM(mark) {
-          return ['span', { style: `background-color: ${mark.attrs.color}` }, 0];
+          return ['span', { style: `background-color: ${mark.attrs.color} !important` }, 0];
         }
       }
     }
@@ -323,6 +456,16 @@ const ProseMirrorEditor: React.FC = () => {
 
   // Then define toolbar buttons
   const toolbarButtons = [
+    {
+      label: "↶",
+      command: undo,
+      title: "Undo"
+    },
+    {
+      label: "↷",
+      command: redo,
+      title: "Redo"
+    },
     {
       label: "B",
       command: toggleMark(extendedSchema.marks.strong),
@@ -461,24 +604,18 @@ const ProseMirrorEditor: React.FC = () => {
   // Then font buttons
   const fontButtons = [
     {
-      label: "Default",
-      command: toggleMark(extendedSchema.marks.fontFamily, { fontFamily: '' }),
-      title: "Default font"
+      label: "Liberation Sans",
+      command: (state: EditorState, dispatch: Dispatch) => {
+        return toggleMark(extendedSchema.marks.font, { fontFamily: "'Liberation Sans'" })(state, dispatch);
+      },
+      title: "Liberation Sans Font"
     },
     {
-      label: "Arial",
-      command: toggleMark(extendedSchema.marks.fontFamily, { fontFamily: 'Arial' }),
-      title: "Arial font"
-    },
-    {
-      label: "Times New Roman",
-      command: toggleMark(extendedSchema.marks.fontFamily, { fontFamily: 'Times New Roman' }),
-      title: "Times New Roman font"
-    },
-    {
-      label: "Courier New",
-      command: toggleMark(extendedSchema.marks.fontFamily, { fontFamily: 'Courier New' }),
-      title: "Courier New font"
+      label: "Proximanova Regular",
+      command: (state: EditorState, dispatch: Dispatch) => {
+        return toggleMark(extendedSchema.marks.font, { fontFamily: "'Proximanova Regular'" })(state, dispatch);
+      },
+      title: "Proximanova Regular Font"
     }
   ];
 
@@ -487,84 +624,59 @@ const ProseMirrorEditor: React.FC = () => {
     {
       label: "Text Color",
       command: (color: string) => (state: EditorState, dispatch: Dispatch) => {
-        const { from, to } = state.selection;
-        if (dispatch) {
-          dispatch(state.tr.addMark(
-            from,
-            to,
-            state.schema.marks.textColor.create({ color })
-          ));
-        }
-        return true;
+        return toggleMark(state.schema.marks.textColor, { color })(state, dispatch);
       },
-      title: "Change text color",
       onClick: (e: React.MouseEvent) => {
-        const rect = (e.target as HTMLElement).getBoundingClientRect();
-        setColorPickerPosition({ top: rect.bottom + window.scrollY, left: rect.left });
+        setColorPickerPosition({ top: e.clientY + 10, left: e.clientX });
         setShowTextColorPicker(true);
-        setShowBgColorPicker(false);
-      }
+      },
+      title: "Change Text Color"
     },
     {
-      label: "Highlight Color",
+      label: "Highlight",
       command: (color: string) => (state: EditorState, dispatch: Dispatch) => {
-        const { from, to } = state.selection;
-        if (dispatch) {
-          dispatch(state.tr.addMark(
-            from,
-            to,
-            state.schema.marks.backgroundColor.create({ color })
-          ));
-        }
-        return true;
+        return toggleMark(state.schema.marks.backgroundColor, { color })(state, dispatch);
       },
-      title: "Change highlight color",
       onClick: (e: React.MouseEvent) => {
-        const rect = (e.target as HTMLElement).getBoundingClientRect();
-        setColorPickerPosition({ top: rect.bottom + window.scrollY, left: rect.left });
+        setColorPickerPosition({ top: e.clientY + 10, left: e.clientX });
         setShowBgColorPicker(true);
-        setShowTextColorPicker(false);
-      }
+      },
+      title: "Highlight Text"
     }
   ];
 
   useEffect(() => {
     if (!editorRef.current) return;
 
-    const content = document.createElement("div");
-    content.innerHTML = "<p>Start typing here...</p>";
-
-    // Create ProseMirror state with table plugins
-    const state = EditorState.create({
-      doc: DOMParser.fromSchema(extendedSchema).parse(content),
-      plugins: [
-        history(),
-        keymap(baseKeymap),
-        columnResizing(),
-        tableEditing(),
-        imagePlugin(imageSettings)
-      ],
-    });
-
-    // Store state for toolbar control
-    setEditorState(state);
-
-    // Initialize ProseMirror editor
-    viewRef.current = new EditorView(editorRef.current, {
-      state,
+    const view = new EditorView(editorRef.current, {
+      state: EditorState.create({
+        doc: DOMParser.fromSchema(extendedSchema).parse(editorRef.current, {
+          preserveWhitespace: "full"
+        }),
+        plugins: [
+          history(),
+          keymap(baseKeymap),
+          keymap({
+            "Mod-z": undo,
+            "Mod-y": redo,
+            "Mod-Shift-z": redo
+          }),
+          tableEditing(),
+          columnResizing({}),
+          imagePlugin(imageSettings)
+        ]
+      }),
       dispatchTransaction(transaction) {
-        const newState = viewRef.current?.state.apply(transaction);
-        if (newState) {
-          viewRef.current?.updateState(newState);
-          setEditorState(newState);
-        }
+        const newState = view.state.apply(transaction);
+        view.updateState(newState);
+        setEditorState(newState);
       },
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none'
+      }
     });
 
-    return () => {
-      viewRef.current?.destroy();
-      viewRef.current = null;
-    };
+    viewRef.current = view;
   }, []);
 
   // Create style element on mount
@@ -580,31 +692,30 @@ const ProseMirrorEditor: React.FC = () => {
   // Update CSS when it changes
   useEffect(() => {
     if (styleElement) {
-      // Process CSS rules
       const scopedCss = cssContent
         .split('}')
         .map(rule => {
           if (!rule.trim()) return '';
           const [selectors, styles] = rule.split('{');
           
-          // Handle multiple selectors (comma-separated)
           return selectors.split(',')
             .map(selector => {
               selector = selector.trim();
               if (!selector) return '';
               
-              // If it's already a class selector (starts with .), just scope it
-              if (selector.startsWith('.')) {
-                return `.${EDITOR_CLASS} ${selector} { ${styles} }`;
+              // Handle nested selectors with inheritance
+              if (selector.includes(' ')) {
+                const parts = selector.split(' ');
+                const parentSelector = parts[0];
+                const childSelector = parts.slice(1).join(' ');
+                
+                return `
+                  .${EDITOR_CLASS} ${selector} { ${styles} !important; }
+                  .${EDITOR_CLASS} ${parentSelector}[data-inherit-color="true"] ${childSelector} { color: inherit !important; }
+                `;
               }
               
-              // For element selectors, create two rules:
-              // 1. Direct element selector
-              // 2. Element with any class
-              return `
-                .${EDITOR_CLASS} ${selector} { ${styles} }
-                .${EDITOR_CLASS} ${selector}[class] { ${styles} }
-              `;
+              return `.${EDITOR_CLASS} ${selector} { ${styles} !important; }`;
             })
             .join('\n');
         })
@@ -753,7 +864,6 @@ const ProseMirrorEditor: React.FC = () => {
                     }}
                     className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
                     title={fontBtn.title}
-                    style={{ fontFamily: fontBtn.label === "Default" ? "" : fontBtn.label }}
                   >
                     {fontBtn.label}
                   </button>
