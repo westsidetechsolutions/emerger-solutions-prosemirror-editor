@@ -513,6 +513,11 @@ const ProseMirrorEditor: React.FC = () => {
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const [colorPickerPosition, setColorPickerPosition] = useState({ top: 0, left: 0 });
 
+  // Add these refs at the top of the component
+  const formatDropdownRef = useRef<HTMLDivElement>(null);
+  const tableDropdownRef = useRef<HTMLDivElement>(null);
+  const fontDropdownRef = useRef<HTMLDivElement>(null);
+
   // Define table commands first
   const insertTable = (state: EditorState, dispatch: Dispatch) => {
     const tr = state.tr.replaceSelectionWith(
@@ -748,43 +753,39 @@ const ProseMirrorEditor: React.FC = () => {
   };
 
   useEffect(() => {
-    if (editorRef.current) {
-      const plugins = [
-        history(),
-        keymap(baseKeymap),
-        keymap({
-          "Mod-z": undo,
-          "Mod-y": redo,
-          "Mod-Shift-z": redo
-        }),
-        createImageResizePlugin(),
-        tableEditing(),
-        columnResizing()
-      ];
+    if (!editorRef.current) return;
 
-      const state = EditorState.create({
-        doc: DOMParser.fromSchema(extendedSchema).parse(editorRef.current),
-        plugins
-      });
-
-      const view = new EditorView(editorRef.current, {
-        state,
-        dispatchTransaction: (tr: Transaction) => {
-          const newState = view.state.apply(tr);
-          view.updateState(newState);
-          setEditorState(newState);
-        }
-      });
-
-      viewRef.current = view;
-      setEditorState(state);
-    }
-
-    return () => {
-      if (viewRef.current) {
-        viewRef.current.destroy();
+    const view = new EditorView(editorRef.current, {
+      state: EditorState.create({
+        doc: extendedSchema.node("doc", null, [
+          extendedSchema.node("paragraph", null, [
+            extendedSchema.text("Start typing...")
+          ])
+        ]),
+        plugins: [
+          history(),
+          keymap(baseKeymap),
+          keymap({
+            "Mod-z": undo,
+            "Mod-y": redo,
+            "Mod-Shift-z": redo
+          }),
+          tableEditing(),
+          columnResizing({}),
+          createImageResizePlugin()
+        ]
+      }),
+      dispatchTransaction(transaction) {
+        const newState = view.state.apply(transaction);
+        view.updateState(newState);
+        setEditorState(newState);
+      },
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none'
       }
-    };
+    });
+
+    viewRef.current = view;
   }, []);
 
   // Create style element on mount
@@ -897,6 +898,26 @@ const ProseMirrorEditor: React.FC = () => {
     setIsAssetManagerOpen(false);
   };
 
+  // Add this useEffect to handle clicks outside dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (formatDropdownRef.current && !formatDropdownRef.current.contains(event.target as Node)) {
+        setIsFormatDropdownOpen(false);
+      }
+      if (tableDropdownRef.current && !tableDropdownRef.current.contains(event.target as Node)) {
+        setIsTableDropdownOpen(false);
+      }
+      if (fontDropdownRef.current && !fontDropdownRef.current.contains(event.target as Node)) {
+        setIsFontDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="border border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden max-w-4xl mx-auto">
       {/* Toolbar */}
@@ -928,7 +949,7 @@ const ProseMirrorEditor: React.FC = () => {
             </button>
             
             {btn.label === "Table ▾" && isTableDropdownOpen && (
-              <div className="absolute right-0 mt-1 bg-white border rounded shadow-lg py-1 z-10">
+              <div ref={tableDropdownRef} className="absolute right-0 mt-1 bg-white border rounded shadow-lg py-1 z-10">
                 {tableButtons.map((tableBtn, idx) => (
                   <button
                     key={idx}
@@ -946,7 +967,7 @@ const ProseMirrorEditor: React.FC = () => {
             )}
 
             {btn.label === "Format ▾" && isFormatDropdownOpen && (
-              <div className="absolute left-0 mt-1 bg-white border rounded shadow-lg py-1 z-10 min-w-[200px]">
+              <div ref={formatDropdownRef} className="absolute left-0 mt-1 bg-white border rounded shadow-lg py-1 z-10 min-w-[200px]">
                 {formatButtons.map((formatBtn, idx) => (
                   <button
                     key={idx}
@@ -964,7 +985,7 @@ const ProseMirrorEditor: React.FC = () => {
             )}
 
             {btn.label === "Font ▾" && isFontDropdownOpen && (
-              <div className="absolute left-0 mt-1 bg-white border rounded shadow-lg py-1 z-10 min-w-[200px]">
+              <div ref={fontDropdownRef} className="absolute left-0 mt-1 bg-white border rounded shadow-lg py-1 z-10 min-w-[200px]">
                 {fontButtons.map((fontBtn, idx) => (
                   <button
                     key={idx}
