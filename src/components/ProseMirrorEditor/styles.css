@@ -341,35 +341,102 @@
   max-width: 100%;
   height: auto;
   border: 2px solid transparent;
+  cursor: move;
+  user-select: none;
+  -webkit-user-drag: element;
 }
 
 .ProseMirror img:hover {
   border: 2px solid #4dabf7;
 }
 
-.ProseMirror img.ProseMirror-selectednode {
-  border: 2px solid #4dabf7;
-  cursor: nw-resize;
-}
-
-.ProseMirror img::after {
+.ProseMirror img:hover::after {
   content: '';
   position: absolute;
-  right: -6px;
-  bottom: -6px;
-  width: 12px;
-  height: 12px;
-  background: white;
-  border: 2px solid #4dabf7;
+  right: -5px;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  background-color: #4dabf7;
+  border: 2px solid white;
   border-radius: 50%;
   cursor: se-resize;
-  display: none;
 }
 
-.ProseMirror img.ProseMirror-selectednode::after {
-  display: block;
+.ProseMirror img.ProseMirror-selectednode {
+  border: 2px solid #4dabf7;
 }
 
-.ProseMirror .resize-cursor {
+.ProseMirror img.resize-cursor {
   cursor: se-resize;
-} 
+}
+
+.ProseMirror-hideselection *::selection { 
+  background: transparent; 
+}
+
+.ProseMirror-hideselection *::-moz-selection { 
+  background: transparent; 
+}
+
+/* Image Wrapper Styling */
+.ProseMirror .image-wrapper {
+  position: relative;
+  display: inline-block; /* Adjust as needed (block or inline-block) */
+}
+
+/* Image Styling */
+.ProseMirror .image-wrapper img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 2px solid transparent;
+  cursor: move;
+  user-select: none;
+  -webkit-user-drag: element;
+}
+
+/* Hover Effect on Image */
+.ProseMirror .image-wrapper img:hover {
+  border: 2px solid #4dabf7;
+}
+
+/* Selected Image Styling */
+.ProseMirror .image-wrapper img.ProseMirror-selectednode {
+  border: 2px solid #4dabf7;
+}
+
+/* Resize Handle Styling */
+.ProseMirror .resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #4dabf7;
+  border: 2px solid white;
+  border-radius: 50%;
+  bottom: -6px;
+  right: -6px;
+  cursor: se-resize;
+  box-shadow: 0 0 2px rgba(0,0,0,0.3);
+}
+
+/* Ensure proper layering */
+.ProseMirror .image-wrapper {
+  user-select: none;
+}
+
+/* Cursor changes during resize */
+.ProseMirror img.resize-cursor {
+  cursor: se-resize;
+}
+
+/* Hide text selection */
+.ProseMirror-hideselection *::selection { 
+  background: transparent; 
+}
+
+.ProseMirror-hideselection *::-moz-selection { 
+  background: transparent; 
+}
+
+/* Toolbar and other existing styles... */ 

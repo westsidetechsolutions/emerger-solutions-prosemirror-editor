@@ -20,7 +20,6 @@ import "prosemirror-image-plugin/dist/styles/common.css";
 import "prosemirror-image-plugin/dist/styles/withResize.css";
 import "@/components/ProseMirrorEditor/styles.css";
 import ColorPicker from "./ColorPicker";
-import { imagePlugin } from 'prosemirror-image-plugin';
 
 const EDITOR_CLASS = "prosemirror-editor-container";
 
@@ -35,7 +34,9 @@ const tableSchema = tableNodes({
       default: null,
       getFromDOM: dom => dom.style.backgroundColor || null,
       setDOMAttr: (value, attrs) => {
-        if (value) attrs.style = (attrs.style || '') + `background-color: ${value};`
+        if (value) {
+          attrs.style = `${attrs.style || ""}background-color: ${value};`;
+        }
       }
     }
   }
@@ -298,11 +299,12 @@ const extendedSchema = new Schema({
             src: { default: '' },
             alt: { default: '' },
             title: { default: '' },
-            width: { default: null },
-            style: { default: '' }
+            width: { default: 'auto' },
+            class: { default: '' }
           },
           group: "inline",
           draggable: true,
+          selectable: true,
           parseDOM: [{
             tag: "img",
             getAttrs(dom: HTMLElement) {
@@ -310,15 +312,15 @@ const extendedSchema = new Schema({
                 src: dom.getAttribute("src") || "",
                 alt: dom.getAttribute("alt") || "",
                 title: dom.getAttribute("title") || "",
-                width: dom.getAttribute("width") || null,
-                style: dom.getAttribute("style") || ""
+                width: dom.getAttribute("width") || "auto",
+                class: dom.getAttribute("class") || ""
               };
             }
           }],
           toDOM(node) {
             const attrs = {...node.attrs};
-            if (!attrs.style && attrs.width) {
-              attrs.style = `width: ${attrs.width}px`;
+            if (attrs.width === 'auto') {
+              delete attrs.width;
             }
             return ["img", attrs];
           }
@@ -437,47 +439,53 @@ const createImageResizePlugin = () => {
           const target = event.target as HTMLElement;
           if (target.nodeName === 'IMG') {
             const img = target as HTMLImageElement;
-            let startX = event.pageX;
-            let startWidth = img.width;
-            
-            // Find the image node position
-            const pos = view.posAtDOM(img, 0);
-            if (pos === null) return false;
-            
-            const node = view.state.doc.nodeAt(pos);
-            if (!node) return false;
+            const rect = img.getBoundingClientRect();
+            const isResizeHandle = 
+              event.clientX > rect.right - 20 && 
+              event.clientY > rect.bottom - 20;
 
-            img.classList.add('ProseMirror-selectednode');
-            img.classList.add('resize-cursor');
-
-            const onMouseMove = (e: MouseEvent) => {
-              const currentX = e.pageX;
-              const diffX = currentX - startX;
-              const newWidth = Math.max(60, startWidth + diffX);
+            if (isResizeHandle) {
+              let startX = event.pageX;
+              let startWidth = img.width;
               
-              try {
-                const tr = view.state.tr.setNodeMarkup(pos, null, {
-                  ...node.attrs,
-                  width: newWidth,
-                  style: `width: ${newWidth}px`
-                });
-                view.dispatch(tr);
-              } catch (error) {
-                console.error('Error updating image size:', error);
-              }
-            };
+              // Find the image node position
+              const pos = view.posAtDOM(img, 0);
+              if (pos === null) return false;
+              
+              const node = view.state.doc.nodeAt(pos);
+              if (!node) return false;
 
-            const onMouseUp = () => {
-              window.removeEventListener('mousemove', onMouseMove);
-              window.removeEventListener('mouseup', onMouseUp);
-              img.classList.remove('resize-cursor');
-              img.classList.remove('ProseMirror-selectednode');
-            };
+              img.classList.add('resize-cursor');
 
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('mouseup', onMouseUp);
-            event.preventDefault();
-            return true;
+              const onMouseMove = (e: MouseEvent) => {
+                const currentX = e.pageX;
+                const diffX = currentX - startX;
+                const newWidth = Math.max(60, startWidth + diffX);
+                
+                try {
+                  const tr = view.state.tr.setNodeMarkup(pos, null, {
+                    ...node.attrs,
+                    width: newWidth,
+                    style: `width: ${newWidth}px`
+                  });
+                  view.dispatch(tr);
+                } catch (error) {
+                  console.error('Error updating image size:', error);
+                }
+              };
+
+              const onMouseUp = () => {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+                img.classList.remove('resize-cursor');
+              };
+
+              window.addEventListener('mousemove', onMouseMove);
+              window.addEventListener('mouseup', onMouseUp);
+              event.preventDefault();
+              return true;
+            }
+            return false;
           }
           return false;
         }
@@ -722,37 +730,43 @@ const ProseMirrorEditor: React.FC = () => {
   ];
 
   useEffect(() => {
-    if (!editorRef.current) return;
-
-    const view = new EditorView(editorRef.current, {
-      state: EditorState.create({
-        doc: DOMParser.fromSchema(extendedSchema).parse(editorRef.current, {
-          preserveWhitespace: "full"
+    if (editorRef.current) {
+      const plugins = [
+        history(),
+        keymap(baseKeymap),
+        keymap({
+          "Mod-z": undo,
+          "Mod-y": redo,
+          "Mod-Shift-z": redo
         }),
-        plugins: [
-          history(),
-          keymap(baseKeymap),
-          keymap({
-            "Mod-z": undo,
-            "Mod-y": redo,
-            "Mod-Shift-z": redo
-          }),
-          tableEditing(),
-          columnResizing({}),
-          createImageResizePlugin()
-        ]
-      }),
-      dispatchTransaction(transaction) {
-        const newState = view.state.apply(transaction);
-        view.updateState(newState);
-        setEditorState(newState);
-      },
-      attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none'
-      }
-    });
+        createImageResizePlugin(),
+        tableEditing(),
+        columnResizing()
+      ];
 
-    viewRef.current = view;
+      const state = EditorState.create({
+        doc: DOMParser.fromSchema(extendedSchema).parse(editorRef.current),
+        plugins
+      });
+
+      const view = new EditorView(editorRef.current, {
+        state,
+        dispatchTransaction: (tr: Transaction) => {
+          const newState = view.state.apply(tr);
+          view.updateState(newState);
+          setEditorState(newState);
+        }
+      });
+
+      viewRef.current = view;
+      setEditorState(state);
+    }
+
+    return () => {
+      if (viewRef.current) {
+        viewRef.current.destroy();
+      }
+    };
   }, []);
 
   // Create style element on mount
