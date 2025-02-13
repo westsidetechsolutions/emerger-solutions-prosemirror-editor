@@ -504,6 +504,9 @@ const ProseMirrorEditor: React.FC = () => {
   const [isFormatDropdownOpen, setIsFormatDropdownOpen] = useState(false);
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
   const [isAssetManagerOpen, setIsAssetManagerOpen] = useState(false);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [showAssetSelector, setShowAssetSelector] = useState(false);
 
   // Add new state variables for color picker
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
@@ -591,7 +594,12 @@ const ProseMirrorEditor: React.FC = () => {
       label: "CSS",
       command: null,
       title: "Edit CSS"
-    }
+    },
+    {
+      label: "🔗",
+      command: null,
+      title: "Add Link"
+    },
   ];
 
   // Then format buttons
@@ -726,6 +734,19 @@ const ProseMirrorEditor: React.FC = () => {
     }
   ];
 
+  // Add this function to handle link creation
+  const createLink = (url: string) => {
+    if (!viewRef.current) return;
+    const { state, dispatch } = viewRef.current;
+    
+    if (state.selection.empty) return;
+    
+    toggleMark(state.schema.marks.link, { 
+      href: url,
+      title: url
+    })(state, dispatch);
+  };
+
   useEffect(() => {
     if (editorRef.current) {
       const plugins = [
@@ -829,8 +850,10 @@ const ProseMirrorEditor: React.FC = () => {
     if (command === null) {
       if (label === "CSS") {
         setIsCssModalOpen(true);
-      } else if (label === "📷") {  // Check for the image icon
+      } else if (label === "📷") {
         setIsAssetManagerOpen(true);
+      } else if (label === "🔗") {
+        setIsLinkModalOpen(true);
       } else if (label === "Paste HTML") {
         setHtmlContent(getEditorHtml());
         setIsModalOpen(true);
@@ -1068,6 +1091,72 @@ const ProseMirrorEditor: React.FC = () => {
             }}
             onClose={() => setShowBgColorPicker(false)}
             initialColor="#ffeb3b"
+          />
+        </div>
+      )}
+
+      {/* Link Modal */}
+      {isLinkModalOpen && !showAssetSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center modal-overlay">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-xl">
+            <h2 className="text-xl font-bold mb-4">Insert Link</h2>
+            <div className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  placeholder="Enter URL or select an asset"
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              <div className="flex justify-between">
+                <button
+                  onClick={() => setShowAssetSelector(true)}
+                  className="px-4 py-2 text-blue-600 hover:text-blue-800"
+                >
+                  Select from Assets
+                </button>
+                <div className="space-x-2">
+                  <button
+                    onClick={() => {
+                      setIsLinkModalOpen(false);
+                      setLinkUrl("");
+                    }}
+                    className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (linkUrl) {
+                        createLink(linkUrl);
+                        setIsLinkModalOpen(false);
+                        setLinkUrl("");
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Insert Link
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Asset Selector */}
+      {showAssetSelector && (
+        <div className="modal-overlay">
+          <AssetManager
+            isOpen={showAssetSelector}
+            onClose={() => setShowAssetSelector(false)}
+            onSelect={(asset) => {
+              setLinkUrl(asset.url);
+              setShowAssetSelector(false);
+            }}
+            mode="link"
           />
         </div>
       )}

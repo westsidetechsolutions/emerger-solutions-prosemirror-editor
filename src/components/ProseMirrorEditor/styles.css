@@ -77,16 +77,14 @@
 
 /* Toolbar styling */
 .editor-toolbar {
+  position: relative;
+  z-index: 30;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 12px;
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid #e2e8f0;
   background: white;
-  border-bottom: 1px solid #edf2f7;
-  border-radius: 8px 8px 0 0;
-  position: sticky;
-  top: 0;
-  z-index: 40;
 }
 
 .editor-toolbar button {
