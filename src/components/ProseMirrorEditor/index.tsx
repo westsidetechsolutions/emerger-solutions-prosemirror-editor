@@ -2,15 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { EditorState, Transaction, Plugin } from "prosemirror-state";
-import { EditorView, Decoration, DecorationSet } from "prosemirror-view";
+import { EditorView } from "prosemirror-view";
 import { Schema, DOMParser, NodeSpec, DOMSerializer } from "prosemirror-model";
 import { history, undo, redo } from "prosemirror-history";
 import { keymap } from "prosemirror-keymap";
 import { baseKeymap, toggleMark, setBlockType, wrapIn } from "prosemirror-commands";
 import { schema as basicSchema } from "prosemirror-schema-basic";
 import { addListNodes, wrapInList } from "prosemirror-schema-list";
-import { addColumnAfter, addColumnBefore, deleteColumn, addRowAfter, addRowBefore, deleteRow, mergeCells, splitCell, toggleHeaderCell, tableEditing } from 'prosemirror-tables';
-import { columnResizing, tableNodes } from "prosemirror-tables";
+import { addColumnAfter, addColumnBefore, deleteColumn, addRowAfter, addRowBefore, deleteRow, mergeCells, splitCell, toggleHeaderCell } from 'prosemirror-tables';
+import { tableNodes } from "prosemirror-tables";
 import OrderedMap from "orderedmap";
 import "prosemirror-view/style/prosemirror.css";
 import "prosemirror-tables/style/tables.css";
@@ -425,13 +425,6 @@ const extendedSchema = new Schema({
 // Add type for Dispatch
 type Dispatch = (tr: Transaction) => void;
 
-// Update ToolbarButton type
-type ToolbarButton = {
-  label: string;
-  command: ((state: EditorState, dispatch: Dispatch) => boolean) | null;
-  title: string;
-};
-
 // Add this function before your ProseMirrorEditor component
 const createImageResizePlugin = () => {
   return new Plugin({
@@ -444,8 +437,8 @@ const createImageResizePlugin = () => {
             const img = wrapper?.querySelector('img') as HTMLImageElement;
             if (!img) return false;
 
-            let startX = event.pageX;
-            let startWidth = img.width;
+            const startX = event.pageX;
+            const startWidth = img.width;
             
             // Find the image node position
             const pos = view.posAtDOM(wrapper!, 0);

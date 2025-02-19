@@ -211,7 +211,7 @@ export default function AssetManager({ isOpen, onClose, onSelect, mode }: AssetM
       });
       alert('Files uploaded successfully!');
     } catch (error) {
-      alert('There was an error uploading your files.');
+      alert('There was an error uploading your files.' + error);
     }
   }
 
