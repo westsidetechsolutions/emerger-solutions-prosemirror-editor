@@ -575,11 +575,11 @@ const ProseMirrorEditor: React.FC = () => {
       command: null,
       title: "Text formatting options"
     },
-    {
-      label: "Table ▾",
-      command: null,
-      title: "Table options"
-    },
+    //{
+    //  label: "Table ▾",
+    //  command: null,
+    //  title: "Table options"
+    //},
     {
       label: "Font ▾",
       command: null,
@@ -770,8 +770,6 @@ const ProseMirrorEditor: React.FC = () => {
             "Mod-y": redo,
             "Mod-Shift-z": redo
           }),
-          tableEditing(),
-          columnResizing({}),
           createImageResizePlugin()
         ]
       }),
