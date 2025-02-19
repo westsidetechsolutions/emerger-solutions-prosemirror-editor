@@ -9,34 +9,31 @@ interface ModalProps {
   className?: string;
 }
 
-const Modal: React.FC<ModalProps> = ({
+export default function Modal({
   isOpen,
   onClose,
   children,
   title,
   className = ''
-}) => {
+}: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
         onClose();
       }
-    };
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+    }
+    function handleClickOutside(e: MouseEvent) {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
         onClose();
       }
-    };
-
+    }
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
       document.addEventListener('mousedown', handleClickOutside);
       document.body.style.overflow = 'hidden';
     }
-
     return () => {
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
@@ -47,22 +44,16 @@ const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div 
-        ref={modalRef}
-        className={`bg-white rounded-lg shadow-xl max-h-[90vh] overflow-auto ${className}`}
-      >
+    <div className="modal-root">
+      <div ref={modalRef} className={`modal-content ${className}`}>
         {title && (
-          <div className="modal-header sticky top-0 bg-white border-b border-gray-200">
-            <h2 className="text-2xl font-semibold px-8 py-6">{title}</h2>
+          <div className="modal-header">
+            <h2>{title}</h2>
+            <button onClick={onClose} className="modal-close">×</button>
           </div>
         )}
-        <div className="modal-body">
-          {children}
-        </div>
+        <div className="modal-body">{children}</div>
       </div>
     </div>
   );
-};
-
-export default Modal; 
+}
