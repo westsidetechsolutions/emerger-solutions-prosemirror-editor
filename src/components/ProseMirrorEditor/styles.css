@@ -78,7 +78,7 @@
 /* Toolbar styling */
 .editor-toolbar {
   position: relative;
-  z-index: 30;
+  z-index: 20;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -499,4 +499,30 @@
 
 .font-size-btn:hover {
   background: #e2e8f0;
+}
+
+.alignment-buttons {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+/* Add these styles to fix dropdown z-index issues */
+.editor-toolbar {
+  position: relative;
+  z-index: 20;
+}
+
+.editor-toolbar .dropdown-menu {
+  z-index: 30;
+}
+
+/* Update the existing dropdown styles */
+.absolute {
+  z-index: 50 !important; /* Higher z-index to ensure dropdowns appear above everything */
+}
+
+/* Make sure the editor container doesn't clip its children */
+.border.border-gray-200.rounded-lg.shadow-sm.bg-white.overflow-hidden.max-w-4xl.mx-auto {
+  overflow: visible !important;
 } 

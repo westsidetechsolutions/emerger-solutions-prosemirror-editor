@@ -19,4 +19,23 @@ export const setFontSize = (size: number) => (state: EditorState, dispatch: Disp
     if (dispatch) dispatch(tr);
     return true;
   }
+};
+
+// Add text alignment commands
+export const setTextAlign = (alignment: 'left' | 'center' | 'right') => (state: EditorState, dispatch: Dispatch) => {
+  const { from, to } = state.selection;
+  
+  const tr = state.tr;
+  state.doc.nodesBetween(from, to, (node, pos) => {
+    if (node.attrs && node.attrs.textAlign !== undefined) {
+      tr.setNodeMarkup(pos, null, { 
+        ...node.attrs, 
+        textAlign: alignment 
+      });
+    }
+    return true;
+  });
+  
+  if (dispatch) dispatch(tr);
+  return true;
 }; 

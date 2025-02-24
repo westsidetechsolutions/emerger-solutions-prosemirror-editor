@@ -21,7 +21,7 @@ import "prosemirror-image-plugin/dist/styles/withResize.css";
 import "@/components/ProseMirrorEditor/styles.css";
 import ColorPicker from "./ColorPicker";
 import FontSizeInput from './FontSizeInput';
-import { setFontSize } from './commands';
+import { setFontSize, setTextAlign } from './commands';
 
 const EDITOR_CLASS = "prosemirror-editor-container";
 
@@ -71,17 +71,19 @@ const extendedSchema = new Schema({
           group: "block",
           attrs: { 
             style: { default: "" },
-            class: { default: "" }
+            class: { default: "" },
+            textAlign: { default: "left" }
           },
           parseDOM: [{
             tag: "p",
             getAttrs: (dom: HTMLElement) => ({
               style: dom.getAttribute("style") || "",
-              class: dom.getAttribute("class") || ""
+              class: dom.getAttribute("class") || "",
+              textAlign: dom.style.textAlign || "left"
             }),
           }],
           toDOM: node => ["p", { 
-            style: node.attrs.style,
+            style: `${node.attrs.style}text-align: ${node.attrs.textAlign};`,
             class: node.attrs.class,
             "data-inherit-color": "true"
           }, 0],
@@ -90,12 +92,15 @@ const extendedSchema = new Schema({
           content: "inline*",
           group: "block",
           defining: true,
-          attrs: { level: { default: 1 } },
+          attrs: { 
+            level: { default: 1 },
+            textAlign: { default: "left" }
+          },
           parseDOM: [
-            { tag: "h1", getAttrs: () => ({ level: 1 }) },
-            { tag: "h2", getAttrs: () => ({ level: 2 }) }
+            { tag: "h1", getAttrs: (dom: HTMLElement) => ({ level: 1, textAlign: dom.style.textAlign || "left" }) },
+            { tag: "h2", getAttrs: (dom: HTMLElement) => ({ level: 2, textAlign: dom.style.textAlign || "left" }) }
           ],
-          toDOM: node => [`h${node.attrs.level}`, 0],
+          toDOM: node => [`h${node.attrs.level}`, { style: `text-align: ${node.attrs.textAlign}` }, 0],
         },
         bullet_list: {
           content: "list_item+",
@@ -520,9 +525,13 @@ const ProseMirrorEditor: React.FC = () => {
   const formatDropdownRef = useRef<HTMLDivElement>(null);
   const tableDropdownRef = useRef<HTMLDivElement>(null);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
+  const alignmentDropdownRef = useRef<HTMLDivElement>(null);
 
   // Add this state variable for font size
   const [currentFontSize, setCurrentFontSize] = useState(16);
+
+  // Add with other dropdown states
+  const [isAlignmentDropdownOpen, setIsAlignmentDropdownOpen] = useState(false);
 
   // Define table commands first
   const insertTable = (state: EditorState, dispatch: Dispatch) => {
@@ -745,6 +754,28 @@ const ProseMirrorEditor: React.FC = () => {
     }
   ];
 
+  // Replace the alignment buttons div with this
+  const alignmentOptions = [
+    {
+      label: "Align Left",
+      title: "Align left",
+      command: setTextAlign('left'),
+      icon: "⟵"
+    },
+    {
+      label: "Align Center",
+      title: "Align center",
+      command: setTextAlign('center'),
+      icon: "⟷"
+    },
+    {
+      label: "Align Right",
+      title: "Align right",
+      command: setTextAlign('right'),
+      icon: "⟶"
+    }
+  ];
+
   // Add this function to handle link creation
   const createLink = (url: string) => {
     if (!viewRef.current) return;
@@ -917,6 +948,9 @@ const ProseMirrorEditor: React.FC = () => {
       if (fontDropdownRef.current && !fontDropdownRef.current.contains(event.target as Node)) {
         setIsFontDropdownOpen(false);
       }
+      if (alignmentDropdownRef.current && !alignmentDropdownRef.current.contains(event.target as Node)) {
+        setIsAlignmentDropdownOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -1087,8 +1121,41 @@ const ProseMirrorEditor: React.FC = () => {
             {btn.label}
           </button>
         ))}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setIsAlignmentDropdownOpen(!isAlignmentDropdownOpen);
+              setIsFormatDropdownOpen(false);
+              setIsTableDropdownOpen(false);
+              setIsFontDropdownOpen(false);
+            }}
+            className="px-3 py-2 border rounded hover:bg-gray-100"
+            title="Text alignment"
+          >
+            Align ▾
+          </button>
+          
+          {isAlignmentDropdownOpen && (
+            <div ref={alignmentDropdownRef} className="absolute left-0 mt-1 bg-white border rounded shadow-lg py-1 z-10 min-w-[150px]">
+              {alignmentOptions.map((option, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    handleButtonClick(option.command);
+                    setIsAlignmentDropdownOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                  title={option.title}
+                >
+                  <span className="mr-2">{option.icon}</span> {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <FontSizeInput
           value={currentFontSize}
+          editorView={viewRef.current}
           onChange={(size) => {
             setCurrentFontSize(size);
             if (editorState && viewRef.current) {
