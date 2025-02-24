@@ -465,4 +465,38 @@
   background: transparent; 
 }
 
-/* Toolbar and other existing styles... */ 
+/* Toolbar and other existing styles... */
+
+.font-size-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.font-size-number {
+  width: 50px;
+  text-align: center;
+  border: none;
+  padding: 4px;
+  -moz-appearance: textfield;
+}
+
+.font-size-number::-webkit-outer-spin-button,
+.font-size-number::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.font-size-btn {
+  padding: 4px 8px;
+  background: #f8fafc;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.font-size-btn:hover {
+  background: #e2e8f0;
+} 

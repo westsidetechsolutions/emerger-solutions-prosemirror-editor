@@ -20,6 +20,8 @@ import "prosemirror-image-plugin/dist/styles/common.css";
 import "prosemirror-image-plugin/dist/styles/withResize.css";
 import "@/components/ProseMirrorEditor/styles.css";
 import ColorPicker from "./ColorPicker";
+import FontSizeInput from './FontSizeInput';
+import { setFontSize } from './commands';
 
 const EDITOR_CLASS = "prosemirror-editor-container";
 
@@ -417,6 +419,14 @@ const extendedSchema = new Schema({
         toDOM(mark) {
           return ['span', { style: `background-color: ${mark.attrs.color} !important` }, 0];
         }
+      },
+      fontSize: {
+        attrs: { size: { default: '16px' } },
+        parseDOM: [{
+          style: 'font-size',
+          getAttrs: value => value ? { size: value } : null
+        }],
+        toDOM: mark => ['span', { style: `font-size: ${mark.attrs.size}` }, 0]
       }
     }
   });
@@ -510,6 +520,9 @@ const ProseMirrorEditor: React.FC = () => {
   const formatDropdownRef = useRef<HTMLDivElement>(null);
   const tableDropdownRef = useRef<HTMLDivElement>(null);
   const fontDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Add this state variable for font size
+  const [currentFontSize, setCurrentFontSize] = useState(16);
 
   // Define table commands first
   const insertTable = (state: EditorState, dispatch: Dispatch) => {
@@ -770,6 +783,9 @@ const ProseMirrorEditor: React.FC = () => {
         const newState = view.state.apply(transaction);
         view.updateState(newState);
         setEditorState(newState);
+        
+        // Update font size when selection changes or content changes
+        updateFontSizeFromSelection(newState);
       },
       attributes: {
         class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none'
@@ -909,6 +925,73 @@ const ProseMirrorEditor: React.FC = () => {
     };
   }, []);
 
+  // Add this function to update font size based on selection
+  const updateFontSizeFromSelection = (state: EditorState) => {
+    const { from, to, empty } = state.selection;
+    
+    if (empty) {
+      // For cursor position, check the mark that would be applied to new text
+      const $pos = state.doc.resolve(from);
+      const marks = state.storedMarks || $pos.marks();
+      
+      // Check if we're at the beginning of a paragraph/block
+      const isNewLine = $pos.parentOffset === 0;
+      
+      // If we're at the start of a new paragraph, reset to default size
+      if (isNewLine) {
+        setCurrentFontSize(16);
+        return;
+      }
+      
+      // If cursor is at the end of a text node, also check the previous position's marks
+      let fontSizeMark = marks.find(mark => mark.type.name === 'fontSize');
+      
+      if (!fontSizeMark && from > 0) {
+        // Check if we're at a boundary between nodes
+        const $prev = state.doc.resolve(from - 1);
+        if ($prev.parent === $pos.parent) {
+          const prevMarks = $prev.marks();
+          fontSizeMark = prevMarks.find(mark => mark.type.name === 'fontSize');
+        }
+      }
+      
+      if (fontSizeMark) {
+        const size = fontSizeMark.attrs.size;
+        const numericSize = parseInt(size, 10);
+        if (!isNaN(numericSize)) {
+          setCurrentFontSize(numericSize);
+        }
+      } else {
+        setCurrentFontSize(16); // Default size
+      }
+    } else {
+      // For a selection, find the most common font size
+      let fontSizes: Record<string, number> = {};
+      let maxCount = 0;
+      let mostCommonSize = 16;
+      
+      state.doc.nodesBetween(from, to, (node) => {
+        if (node.isText) {
+          const fontSizeMark = node.marks.find(mark => mark.type.name === 'fontSize');
+          if (fontSizeMark) {
+            const size = fontSizeMark.attrs.size;
+            const numericSize = parseInt(size, 10);
+            if (!isNaN(numericSize)) {
+              fontSizes[numericSize] = (fontSizes[numericSize] || 0) + 1;
+              if (fontSizes[numericSize] > maxCount) {
+                maxCount = fontSizes[numericSize];
+                mostCommonSize = numericSize;
+              }
+            }
+          }
+        }
+        return true;
+      });
+      
+      setCurrentFontSize(mostCommonSize);
+    }
+  };
+
   return (
     <div className="border border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden max-w-4xl mx-auto">
       {/* Toolbar */}
@@ -1004,6 +1087,16 @@ const ProseMirrorEditor: React.FC = () => {
             {btn.label}
           </button>
         ))}
+        <FontSizeInput
+          value={currentFontSize}
+          onChange={(size) => {
+            setCurrentFontSize(size);
+            if (editorState && viewRef.current) {
+              const command = setFontSize(size);
+              command(editorState, viewRef.current.dispatch);
+            }
+          }}
+        />
       </div>
 
       {/* Add the unique class to the editor container */}
